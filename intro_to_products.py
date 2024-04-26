@@ -16,6 +16,8 @@ products to the nodes after you create the network.
 Most SupplyChainNode attributes (local_holding_cost, shipment_lead_time, demand_source, etc.) are
 also attributes of SupplyChainProducts. This allows you to have some attributes that are node-specific,
 some that are product-specific, or a combination. (More on this below.)
+
+A diagram of the network we're about to build is at https://github.com/LarrySnyder/stockpyl-testing/blob/main/intro_to_products_diagram.png.
 """
 
 # Create a 2-stage serial network.
@@ -142,7 +144,7 @@ OK, let's finally run the simulation.
 total_cost = simulation(network, 100, rand_seed=17)
 
 # Display results.
-write_results(network=network, num_periods=100, columns_to_print=['basic', 'costs', 'RM', 'ITHC'], write_txt=True, txt_filename='temp.txt')
+write_results(network=network, num_periods=100, columns_to_print=['basic', 'costs', 'RM', 'ITHC'], write_txt=True, txt_filename='intro_to_products_results.txt')
 #write_results(network=network, num_periods=100, columns_to_print=['basic', 'costs', 'RM', 'ITHC'])
 
 """Here are the first few rows of the results:
@@ -166,43 +168,46 @@ Here's how to decode the results:
 	* (node, product) pairs are indicated by a vertical line, so '2|20' means node 2, product 20.
 	* 'EXT' means external supplier or customer.
 	* State variable abbreviations are described here: https://stockpyl.readthedocs.io/en/latest/api/simulation/sim_io.html
+	* The full results file is saved in intro_to_products_results.txt
 
 So:
-	* In period 0, we start with IL:10 = 5 at node 1, IL:20 = 15 and IL:30 = 10 at node 2. (By default, the initial IL equals
+	* In period 0, we start with IL:10 = 6 at node 1, IL:20 = 35 and IL:30 = 20 at node 2. (By default, the initial IL equals
 		the base-stock level.) These numbers aren't displayed in the table above, only the _ending_ ILs are.
-	* Node 1 receives a demand of 2 for product 10 (IO:EXT|10 = 2). Its inventory position (IP) is now 5 - 2 = 3 and its
-		base-stock level is 5, so it needs to order 2 units' worth of raw materials. Expressed in the units of the raw materials,
+	* Node 1 receives a demand of 2 for product 10 (IO:EXT|10 = 2). Its inventory position (IP) is now 6 - 2 = 4 and its
+		base-stock level is 6, so it needs to order 2 units' worth of raw materials. Expressed in the units of the raw materials,
 		that means it needs to order 10 of product 20 (because BOM = 5) and 6 of product 30 (because BOM = 3). In the table,
 		OQ:2|20 = 10, OQ:2|30 = 6. 
 	* Node 1 has sufficient inventory to fulfill the demand of 2, so it does (OS:EXT|10 = 2).
-	* Node 1 ends the period with IL:10 = 3, and incurs a holding cost of 15 since the per-unit holding cost is 5. There is
-		no stockout cost in this period, so we have HC = 15, SC = 0, TC = 15.
+	* Node 1 ends the period with IL:10 = 4, and incurs a holding cost of 20 since the per-unit holding cost is 5. There is
+		no stockout cost in this period, so we have HC = 20, SC = 0, TC = 20.
 	* Node 2 receives an inbound order of 10 units for product 20 and 6 units for product 3 (IO:1|20 = 10, IO:1|30 = 6).
-		Its inventory positions are now IP:20 = 15 - 10 = 5, IP:30 = 10 - 6 = 4 and its base-stock levels are 15 and 10, 
+		Its inventory positions are now IP:20 = 35 - 10 = 25, IP:30 = 20 - 6 = 14 and its base-stock levels are 35 and 20, 
 		respectively. So it needs to order 10 units of the external supplier dummy product for product 20, and another 6
 		units of the external supplier dummy product for product 30. (Remember that the NBOM = 1 for these pairs.)
 		So, OQ:EXT|-5 = 16. (-5 is the index of the dummy product at the external supplier.)
 	* Node 2 has sufficient inventory to satisfy demand for both products, so it ships 10 units of product 20 and 6 units
 		of product 30 (OS:1|20 = 10, OS:1|30 = 6).
-	* Node 2 ends the period with IL:20 = 5, IL:30 = 4, so HC = 5 * 2 + 4 * 3 = 22, SC = 0. Node 2 also incurs the 
+	* Node 2 ends the period with IL:20 = 25, IL:30 = 14, so HC = 25 * 2 + 14 * 3 = 92, SC = 0. Node 2 also incurs the 
 		in-transit holding cost for items that it shipped to node 1 that have not arrived yet; there are 10 units of
 		product 20 and 6 units of product 30, and the holding cost rates are 2 and 3, so ITHC = 10 * 2 + 6 * 3 = 38;
-		and TC = 22 + 38 = 60.
-	* Jumping ahead to period 3, here's what's going on with the fractional quantities at node 1: 
-		We start period 3 with 0 units of product 20 and 1 unit of product 30 in RM inventory (RM:20 = 0, RM:30 = 1 in period 2).
-		We receive 10 units of product 20 and 0 of product 30 in period 3 (IS:2|20 = 10, IS:2|30 = 0 in period 3). So now we have
-		10 units of product 20 and 1 of product 30, which is enough to make 1/3 unit of product 1 at node 1.
-		This requires (1/3) * 5 = 1.6667 units of product 20 and (1/3) * 3 = 1 unit of product 30, so we end period 3 with
-		RM:20 = 10 - 1.6667 = 8.3333 and RM:30 = 0 at node 1.   
+		and TC = 92 + 38 = 130.
+	* Jumping ahead to period 5, here's what's going on with the fractional quantities at node 1: 
+		We start period 5 (end period 4) with 0 units of both product 20 and product 30 in RM inventory (RM:20 = 0, RM:30 = 0 in period 4).
+		We receive 10 units of product 20 and 5 of product 30 in period 5 (IS:2|20 = 10, IS:2|30 = 5 in period 4). So now we have
+		10 units of product 20 and 5 of product 30, which is enough to make 1.6667 unit of product 1 at node 1.
+		Doing so uses up all the product 30 and 5 * 1.6667 = 8.3333 units of product 20, leaving 1.6667 remaining units of product 20.
+		So we end period 5 with RM:20 = 1.6667 and RM:30 = 0 at node 1.   
+	* The e-15 values in later rows are annoying. I'll work on getting rid of these.
 """
 
-"""I would like you to double-check all 10 lines of the results above and make sure the logic seems right.
-In particular, I feel like something is still wrong since we stop receiving product 30 at node 1 and therefore
-stop satisfying demand entirely. I'm going to hunt for that bug and will update this file if I find it.
+"""Brendan: I would like you to double-check all 10 lines of the results above and make sure the logic seems right.
 
 If you find any bugs, or just anything you can't explain/understand, post an issue at https://github.com/LarrySnyder/stockpyl/issues.
 Describe the issue you're having, and include the code that generated your issue, if it's not the same code as above.
 
 Once we are confident that this small instance is working correctly, I'd like you to create a slightly larger instance,
 maybe 3 nodes/5 products, and perform the same kind of analysis to check it.
+"""
+
+"""J&J folks: Feel free to post bugs or questions at https://github.com/LarrySnyder/stockpyl/issues, or message me separately. 
 """
