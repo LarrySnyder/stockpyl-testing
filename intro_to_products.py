@@ -54,14 +54,14 @@ products[30].local_holding_cost = 3
 
 # We can set attributes for product 10 directly in the SupplyChainProduct object; it's the same as setting
 # it in the node, since node 1 only handles product 10.
-products[10].inventory_policy = Policy(type='BS', base_stock_level=5, node=nodes[1], product=products[10])
+products[10].inventory_policy = Policy(type='BS', base_stock_level=6, node=nodes[1], product=products[10])
 # (The node= and product= arguments are somewhat annoying. I'm going to try to find a way to avoid that.)
 
 # You can also set a node's attributes as a dict in which the keys are products and the values are
 # the attribute values. This allows you to set (node, product)-specific values of the attribute.
 nodes[2].inventory_policy = {
-	20: Policy(type='BS', base_stock_level=15, node=nodes[2], product=products[20]),
-	30: Policy(type='BS', base_stock_level=10, node=nodes[2], product=products[30])
+	20: Policy(type='BS', base_stock_level=35, node=nodes[2], product=products[20]),
+	30: Policy(type='BS', base_stock_level=20, node=nodes[2], product=products[30])
 }
 
 # To access an attribute at a node/product, use SupplyChainNode.get_attribute(). This function will figure
@@ -70,9 +70,9 @@ nodes[2].inventory_policy = {
 # to see whether the attribute is set at the product, and finally it looks to see whether it's set at the node.
 print(nodes[1].get_attribute('local_holding_cost', product=10))		# = 5
 print(nodes[1].get_attribute('shipment_lead_time', product=10))		# = 1
-print(nodes[1].get_attribute('inventory_policy', product=10))		# = Policy(BS: base_stock_level=20.00)
+print(nodes[1].get_attribute('inventory_policy', product=10))		# = Policy(BS: base_stock_level=6.00)
 print(nodes[2].get_attribute('local_holding_cost', product=30))		# = 3
-print(nodes[2].get_attribute('inventory_policy', product=20))		# = Policy(BS: base_stock_level=10.00)
+print(nodes[2].get_attribute('inventory_policy', product=20))		# = Policy(BS: base_stock_level=35.00)
 print(nodes[2].get_attribute('shipment_lead_time', product=20))		# = 2
 print(nodes[2].get_attribute('shipment_lead_time', product=30))		# = 2
 
@@ -105,7 +105,7 @@ In the case of our network, that means that product 20 and product 30 require 1 
 by the external supplier. (That item is a "dummy" product assigned to the supplier. Dummy products always have
 negative indices.) 
 
-We don't set the NBOM explicitly -- we only set the BOM and the code automatically adds the network-based
+We don't set the NBOM explicitly -- we only set the BOM, and the code automatically adds the network-based
 relationships as needed. We can query the NBOM using SupplyChainNode.get_network_bill_of_materials(),
 which returns the BOM relationship for a given (node, product) and a given (predecessor, RM). If the 
 BOM is set explicitly, it returns that number, and if it's implicit from the network structure, it returns
@@ -132,34 +132,35 @@ Two implications of that:
 		into a single raw material inventory.
 	2. If a node has multiple products that use the same raw material, they share the same raw material
 		inventory.
-Item 2 is relevant for our network, because both product 20 and product 30 use the dummy product from the
+Bullet 2 is relevant for our network, because both product 20 and product 30 use the dummy product from the
 external supplier as a raw material, so they both draw their raw materials from the same inventory.
 
 OK, let's finally run the simulation.
 """
 
 # Run simulation.
-total_cost = simulation(network, 100, rand_seed=17, progress_bar=False, consistency_checks='E')
+total_cost = simulation(network, 100, rand_seed=17)
 
 # Display results.
-write_results(network=network, num_periods=100, columns_to_print=['basic', 'costs', 'RM', 'ITHC'])
+write_results(network=network, num_periods=100, columns_to_print=['basic', 'costs', 'RM', 'ITHC'], write_txt=True, txt_filename='temp.txt')
+#write_results(network=network, num_periods=100, columns_to_print=['basic', 'costs', 'RM', 'ITHC'])
 
 """Here are the first few rows of the results:
 
-  t  | i=1      IO:EXT|10    OQ:2|20    OQ:2|30    IS:2|20    IS:2|30       RM:20    RM:30    OS:EXT|10       IL:10         HC         SC    ITHC    TC  | i=2      IO:1|20    IO:1|30    OQ:EXT|-5    IS:EXT|-5    RM:-5    OS:1|20    OS:1|30    IL:20    IL:30     HC    SC    ITHC     TC
----  -------  -----------  ---------  ---------  ---------  ---------  ----------  -------  -----------  ----------  ---------  ---------  ------  ----  -------  ---------  ---------  -----------  -----------  -------  ---------  ---------  -------  -------  -----  ----  ------  -----
-  0  |                  2         10          6          0          0     0              0      2           3          15          0            0    15  |               10          6           16            0        0         10          6        5        4     22     0      38     60
-  1  |                  2         10          6         10          6     0              0      2           3          15          0            0    15  |               10          6            4            0        0          5          4       -5       -2      0     0      22     22
-  2  |                  1          5          3          5          4     0              1      1           3          18          0            0    18  |                5          3            5           16        0         10          0        6       -5     12     0      20     32
-  3  |                  5         25         15         10          0     8.33333        0      3.33333    -1.66667    16.6667    33.3333       0    50  |               25         15           46            4        0         10          0      -15      -20      0     0      20     20
-  4  |                  5         25         15         10          0    18.3333         0      0          -6.66667    36.6667   133.333        0   170  |               25         15            4            5        0          5          0      -35      -35      0     0      10     10
-  5  |                  5         25         15          5          0    23.3333         0      0         -11.6667     46.6667   233.333        0   280  |               25         15           35           46        0         46          0      -14      -50      0     0      92     92
-  6  |                  2         10          6         46          0    69.3333         0      0         -13.6667    138.667    273.333        0   412  |               10          6           27            4        0          4          0      -20      -56      0     0       8      8
-  7  |                  2         10          6          4          0    73.3333         0      0         -15.6667    146.667    313.333        0   460  |               10          6           10           35        0         30          0        5      -62     10     0      60     70
-  8  |                  2         10          6         30          0   103.333          0      0         -17.6667    206.667    353.333        0   560  |               10          6           41           27        0         10          0       22      -68     44     0      20     64
-  9  |                  1          5          3         10          0   113.333          0      0         -18.6667    226.667    373.333        0   600  |                5          3           30           10        0          5          0       27      -71     54     0      10     64
- 10  |                  3         15          9          5          0   118.333          0      0         -21.6667    236.667    433.333        0   670  |               15          9           19           41        0         15          0       53      -80    106     0      30    136
- 
+  t  | i=1      IO:EXT|10    OQ:2|20    OQ:2|30    IS:2|20    IS:2|30        RM:20         RM:30    OS:EXT|10      IL:10        HC        SC    ITHC        TC  | i=2      IO:1|20    IO:1|30    OQ:EXT|-5    IS:EXT|-5         RM:-5    OS:1|20    OS:1|30          IL:20    IL:30            HC    SC    ITHC    TC
+---  -------  -----------  ---------  ---------  ---------  ---------  -----------  ------------  -----------  ---------  --------  --------  ------  --------  -------  ---------  ---------  -----------  -----------  ------------  ---------  ---------  -------------  -------  ------------  ----  ------  ----
+  0  |                  2         10          6          0          0  0             0                2         4         20         0             0  20        |               10          6           16            0   0                   10          6   25                 14  92               0      38   130
+  1  |                  2         10          6         10          6  0             0                2         4         20         0             0  20        |               10          6           16            0   0                   10          6   15                  8  54               0      38    92
+  2  |                  1          5          3         10          6  0             0                1         5         25         0             0  25        |                5          3            8           16   0                    5          3   20                 11  73               0      19    92
+  3  |                  5         25         15          5          3  0             0                5         1          5         0             0   5        |               25         15           40           16   0                   25         15    5                  2  16               0      95   111
+  4  |                  5         25         15         25         15  0             0                5         1          5         0             0   5        |               25         15           40            8   0                   10          5  -15                -10   0               0      35    35
+  5  |                  5         25         15         10          5  1.66667       0                2.66667  -2.33333    3.33333  46.6667        0  50        |               25         15           40           40   0                   25         15  -15                -10   0               0      95    95
+  6  |                  2         10          6         25         15  1.66667       0                4.33333   0.666667   6.66667   0             0   6.66667  |               10          6           16           40   0                   25         15   -3.55271e-15       -1   0               0      95    95
+  7  |                  2         10          6         25         15  1.66667       0                2         3.66667   21.6667    0             0  21.6667   |               10          6           16           40   0                   10          7   15                  8  54               0      41    95
+  8  |                  2         10          6         10          7  0             2.66454e-15      2         4         20         0             0  20        |               10          6           16           16   0                   10          6   15                  8  54               0      38    92
+  9  |                  1          5          3         10          6  0             2.66454e-15      1         5         25         0             0  25        |                5          3            8           16   0                    5          3   20                 11  73               0      19    92
+ 10  |                  3         15          9          5          3  0             2.66454e-15      3         3         15         0             0  15        |               15          9           24           16   0                   15          9   15                  8  54               0      57   111
+
 Here's how to decode the results:
 	* Each node is represented by a group of columns. The node number is indicated in the first column in the group (i.e., i=1).
 	* (node, product) pairs are indicated by a vertical line, so '2|20' means node 2, product 20.
