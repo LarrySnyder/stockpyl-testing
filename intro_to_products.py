@@ -83,9 +83,9 @@ print(products[10].get_bill_of_materials(rm_index=20))				# = 5
 # You can get a list of all raw materials used by a product:
 print(products[10].raw_material_indices)							# = [20, 30]
 # or by a specific product at a specific node:
-print(nodes[1].raw_material_indices_by_product(product_index=10))	# = [20, 30]
+print(nodes[1].raw_materials_by_product(product=10, return_indices=True))	# = [20, 30]
 # You can also find out which predecessor nodes provide a specific raw material to a specific node:
-print(nodes[1].raw_material_supplier_indices_by_product(product_index=10))	# = [2]
+print(nodes[1].raw_material_suppliers_by_product(product=10, return_indices=True))	# = [2]
 
 """Every network has to have external supply. (Nodes can't just create a product with no
 raw materials. This was true even pre-multi-product.) To specify that a node receives external supply,
