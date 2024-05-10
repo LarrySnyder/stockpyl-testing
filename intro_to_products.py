@@ -41,8 +41,8 @@ nodes = {n.index: n for n in network.nodes}
 # To make 1 unit of product 10 requires 5 units of product 20 and 3 units of product 30.
 # Make a dict in which the keys are product indices and the values are the product objects, for convenience.
 products = {10: SupplyChainProduct(index=10), 20: SupplyChainProduct(index=20), 30: SupplyChainProduct(index=30)}
-products[10].set_bill_of_materials(rm_index=20, num_needed=5)
-products[10].set_bill_of_materials(rm_index=30, num_needed=3)
+products[10].set_bill_of_materials(raw_material=20, num_needed=5)
+products[10].set_bill_of_materials(raw_material=30, num_needed=3)
 
 # Add the products to the nodes: node 1 (downstream) handles product 10, node 2 (upstream) handles 20 and 30.
 nodes[1].add_product(products[10])
@@ -79,7 +79,7 @@ print(nodes[2].get_attribute('shipment_lead_time', product=20))		# = 2
 print(nodes[2].get_attribute('shipment_lead_time', product=30))		# = 2
 
 # You can get the BOM number for a given product/raw material pair:
-print(products[10].get_bill_of_materials(rm_index=20))				# = 5
+print(products[10].get_bill_of_materials(raw_material=20))			# = 5
 # You can get a list of all raw materials used by a product:
 print(products[10].raw_material_indices)							# = [20, 30]
 # or by a specific product at a specific node:
