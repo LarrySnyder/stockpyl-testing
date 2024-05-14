@@ -193,7 +193,7 @@ So:
 		and TC = 92 + 38 = 130.
 	* Jumping ahead to period 5, here's what's going on with the fractional quantities at node 1: 
 		We start period 5 (end period 4) with 0 units of both product 20 and product 30 in RM inventory (RM:20 = 0, RM:30 = 0 in period 4).
-		We receive 10 units of product 20 and 5 of product 30 in period 5 (IS:2|20 = 10, IS:2|30 = 5 in period 4). So now we have
+		We receive 10 units of product 20 and 5 of product 30 in period 5 (IS:2|20 = 10, IS:2|30 = 5 in period 5). So now we have
 		10 units of product 20 and 5 of product 30, which is enough to make 1.6667 unit of product 1 at node 1.
 		Doing so uses up all the product 30 and 5 * 1.6667 = 8.3333 units of product 20, leaving 1.6667 remaining units of product 20.
 		So we end period 5 with RM:20 = 1.6667 and RM:30 = 0 at node 1.   
